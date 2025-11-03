@@ -105,6 +105,73 @@
         #about-content { text-align: center; }
         .donation-link { margin-top: 1.5rem; }
         .donation-link img { border: none; box-shadow: none; }
+
+        @media (max-width: 900px) {
+          body {
+            padding: 0.75rem;
+          }
+          .container {
+            padding: 1rem;
+            border-radius: 0.5rem;
+          }
+
+          /* stack the list inputs instead of side by side */
+          .input-area {
+            flex-direction: column;
+          }
+
+          /* each list column full width */
+          .list-column {
+            width: 100%;
+          }
+
+          /* global options: 1 column on mobile */
+          .options-container {
+            display: block;
+          }
+
+          /* buttons row: make them full-width stacked */
+          .main-controls {
+            flex-direction: column;
+          }
+          #compareBtn,
+          #clearBtn {
+            width: 100%;
+          }
+
+          /* the add button shouldn't be fixed to 30% on small screen */
+          #addListBtn {
+            position: static;
+            width: 100%;
+            max-width: none;
+            margin-bottom: 0.75rem;
+          }
+
+          /* counts box: single column so it doesn’t squash */
+          #counts {
+            grid-template-columns: 1fr !important;
+          }
+
+          /* docs area readable */
+          .collapsible-content {
+            padding: 1rem;
+          }
+        }
+
+        @media (max-width: 500px) {
+          .container {
+            padding: 0.75rem;
+        }
+          h1 {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+          textarea {
+            height: 150px;
+      }
+    }
+
+        
     </style>
 </head>
 <body>
