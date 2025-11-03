@@ -2,7 +2,7 @@
 
 A lightweight, browser-based tool for comparing and analyzing differences between multiple lists of text data. Quickly find common items, unique entries, and perform various set operations with an intuitive interface.
 
-![Screenshot](../assets/screenshot.png)
+![Screenshot](assets/screenshot.png)
 
 ## 🚀 Quick Start
 
