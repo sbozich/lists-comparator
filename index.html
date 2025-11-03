@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate List Comparator & Processor</title>
+    <style>
+        :root { --accent-color: #007bff; --border-color: #ddd; --bg-light: #f9f9f9; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 1.5rem; }
+        .container { background: #fff; padding: 2.5rem; border-radius: 12px; box-shadow: 0 6px 25px rgba(0,0,0,0.1); width: 100%; max-width: 1400px; margin: auto; }
+        h1 { text-align: center; color: #333; margin-bottom: 2rem; }
+        
+        .main-layout { display: flex; flex-direction: column; gap: 1rem; }
+        .top-controls { position: relative; min-height: 40px; }
+        .input-area { display: flex; gap: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #eee; }
+        .list-column { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 0.5rem; }
+        
+        #addListBtn { position: absolute; top: 0; right: 0; width: 30%; max-width: 150px; font-size: 1rem; padding: 0.5rem; background-color: #28a745; color: white; }
+        #addListBtn:hover { background-color: #218838; }
+        #addListBtn:disabled { background-color: #6c757d; cursor: not-allowed; }
+
+        .list-header { display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .list-header label { margin-bottom: 0; }
+        .remove-list-btn { position: absolute; top: -10px; right: -5px; background: transparent; border: none; color: #999; font-size: 1.5rem; font-weight: bold; cursor: pointer; padding: 0 5px; line-height: 1; }
+        .remove-list-btn:hover { color: #d93025; }
+        
+        label { display: block; font-weight: bold; }
+        input, textarea, select, button { display: block; width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        textarea { height: 180px; resize: vertical; font-family: monospace; }
+        .csv-column-selector { margin-top: 0.5rem; }
+
+        .per-list-options { background: var(--bg-light); border: 1px solid #e9e9e9; border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+        .per-list-options .option-group { display: flex; gap: 0.5rem; }
+        .checkbox-group-horizontal { display: flex; align-items: center; align-self: flex-start; gap: 1rem; }
+        .checkbox-group-horizontal .checkbox-item { display: flex; align-items: center; }
+        .per-list-options input[type="checkbox"] { width: auto; margin-right: 5px; }
+        .apply-btn { background-color: #6c757d; color: white; margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem; }
+        .apply-btn:hover { background-color: #5a6268; }
+
+        .options-container { margin-top: 1.5rem; padding: 1.5rem; background-color: var(--bg-light); border-radius: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; align-items: end; }
+        .option-group, .checkbox-group { display: flex; flex-direction: column; }
+        .checkbox-group div { display: flex; align-items: center; margin-top: 5px; }
+        .checkbox-group input { width: auto; margin-right: 8px; }
+        
+        .main-controls { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
+        #compareBtn, #clearBtn { padding: 0.9rem; color: #fff; border: none; border-radius: 4px; font-size: 1.1rem; cursor: pointer; transition: background-color 0.3s; }
+        #compareBtn { background-color: var(--accent-color); flex-grow: 3; } #compareBtn:hover { background-color: #0056b3; }
+        #clearBtn { background-color: #dc3545; } #clearBtn:hover { background-color: #c82333; }
+        
+        .results { margin-top: 2rem; }
+        .results h2, .results h3 { border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
+        .visualization-area { display: flex; gap: 2rem; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;}
+        .venn-diagram { position: relative; width: 200px; height: 120px; display: none; }
+        .venn-diagram .circle { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 2px solid; mix-blend-mode: multiply; }
+        .venn-diagram .circleA { border-color: #e57373; background: #e5737380; top: 0; left: 0; }
+        .venn-diagram .circleB { border-color: #64b5f6; background: #64b5f680; top: 0; left: 70px; }
+        .venn-diagram .label { position: absolute; font-weight: bold; text-align: center; width: 50px; }
+        #venn-a-only { top: 45px; left: 15px; } #venn-b-only { top: 45px; right: -5px; } #venn-intersect { top: 45px; left: 75px; }
+        
+        #counts { flex: 1; font-size: 1rem; background-color: #f0f4ff; padding: 1rem; border-radius: 8px; border-left: 5px solid var(--accent-color); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }
+        #counts p { margin: 0; font-weight: bold; } #counts span { font-weight: normal; }
+        
+        .result-header { display: flex; justify-content: space-between; align-items: center; }
+        .result-actions button { font-size: 0.8rem; padding: 4px 8px; background-color: #e9ecef; color: #333; border: 1px solid #ddd; width: auto; margin-left: 0.5rem; }
+        .result-actions button:hover { background-color: #d6d8db; }
+        .result-tabs { display: flex; gap: 5px; margin-top: 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .tab-button { padding: 10px 15px; background: #f1f1f1; border: 1px solid var(--border-color); border-bottom: none; border-radius: 4px 4px 0 0; cursor: pointer; display: none; }
+        .tab-button.active { background: #fff; border-bottom: 1px solid #fff; }
+        .tab-content { display: none; padding-top: 1rem; }
+        .tab-content.active { display: block; }
+        .output-area, .diff-view { width: 100%; height: 250px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.75rem; font-family: monospace; resize: vertical; overflow-y: auto; background-color: #fff; }
+        .diff-view span { display: block; }
+        .diff-view .added { background-color: #e8f5e9; } .diff-view .removed { background-color: #ffebee; }
+
+        .footer-section { text-align: center; margin-top: 2.5rem; border-top: 1px solid #eee; padding-top: 1.5rem; }
+        .footer-section .footer-buttons button { background-color: #6c757d; color: white; width: auto; padding: 0.5rem 1rem; font-size: 0.9rem; margin: 0 0.5rem; }
+        .collapsible-content { display: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; background-color: #fff; line-height: 1.6; margin-top: 1rem; text-align: left; }
+        .collapsible-content h3 { border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-top: 1.5rem; }
+        .collapsible-content h3:first-child { margin-top: 0; }
+        .collapsible-content code { background-color: #e9ecef; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+        .collapsible-content ul { padding-left: 20px; }
+        #about-content { text-align: center; }
+        .donation-link { margin-top: 1.5rem; }
+        .donation-link img { border: none; box-shadow: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Main Application HTML -->
+        <h1>List Comparator & Processor</h1>
+        <div class="main-layout">
+            <div class="top-controls"><button id="addListBtn">+ Add Another List</button></div>
+            <div class="input-area" id="inputArea"></div>
+            <div class="options-container" id="globalOptionsContainer"></div>
+            <div class="main-controls">
+                <button id="compareBtn">Compare Lists</button>
+                <button id="clearBtn">Clear All & Reset</button>
+            </div>
+            <div class="results">
+                <h2>Results</h2>
+                <div class="visualization-area">
+                    <div id="counts"></div>
+                    <div class="venn-diagram" id="vennDiagram">
+                        <div class="circle circleA"></div><div class="circle circleB"></div>
+                        <div class="label" id="venn-a-only">0</div><div class="label" id="venn-intersect">0</div><div class="label" id="venn-b-only">0</div>
+                    </div>
+                </div>
+                <div class="result-tabs" id="resultTabs">
+                    <button class="tab-button active" data-tab="primary" style="display: inline-block;">Primary Result</button>
+                    <button class="tab-button" data-tab="diff" id="diffTabButton">Diff View</button>
+                </div>
+                <div id="primary" class="tab-content active">
+                    <div class="result-header">
+                        <h3 id="primaryResultHeader">Primary Result</h3>
+                        <div class="result-actions"><button id="copyBtn">Copy</button><button id="exportBtn">Export .txt</button></div>
+                    </div>
+                    <textarea id="primaryResultOutput" class="output-area" readonly></textarea>
+                </div>
+                <div id="diff" class="tab-content">
+                    <div class="result-header"><h3>Visual Difference (A vs B)</h3></div>
+                    <div id="diffViewOutput" class="diff-view"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer and Documentation Section -->
+        <div class="footer-section">
+            <div class="footer-buttons">
+                <button id="toggle-docs">Show Documentation</button>
+                <button id="toggle-about">About</button>
+            </div>
+            <div id="documentation-content" class="collapsible-content">
+                <h3>Quick Start</h3><ol><li>Paste your first list into the <strong>List A</strong> text area.</li><li>Paste your second list into the <strong>List B</strong> text area.</li><li>Choose your desired <strong>Comparison Mode</strong>.</li><li>Click the <strong>Compare Lists</strong> button.</li></ol>
+                <h3>Core Features</h3><ul><li><strong>Data Input:</strong> You can either paste your data directly into the text areas or use the <strong>Choose File</strong> button to load data from a <code>.txt</code> or <code>.csv</code> file. The tool will use pasted text if available, otherwise it will check for a file.</li><li><strong>Adding & Removing Lists:</strong> Click the <strong>+ Add Another List</strong> button to add more lists (up to a maximum of 4). For lists C and D, a <strong>&times;</strong> button will appear in the top-right to remove them.</li><li><strong>Running a Comparison:</strong> The main blue <strong>Compare Lists</strong> button runs the comparison on all active lists using the currently selected global options.</li></ul>
+                <h3>Comparison Modes Explained</h3><p>The available modes change depending on the number of lists.</p><strong>When comparing 2 lists:</strong><ul><li><strong>In Both (A ∩ B):</strong> Shows items that exist in both List A and List B.</li><li><strong>All Distinct (A ∪ B):</strong> Merges both lists and shows every unique item from them combined.</li><li><strong>Only in B (B – A):</strong> Shows items that are in List B but are <strong>not</strong> in List A.</li><li><strong>Only in A (A – B):</strong> Shows items that are in List A but are <strong>not</strong> in List B.</li><li><strong>Unique to each (A ∆ B):</strong> Shows items that are in either A or B, but <strong>not in both</strong>.</li></ul><strong>When comparing 3 or 4 lists:</strong><ul><li><strong>Intersection (In ALL lists):</strong> Shows only the items that exist in every single list.</li><li><strong>Union (All distinct items):</strong> Merges all lists and shows every unique item from them combined.</li></ul>
+                <h3>Data Cleaning & Processing</h3><ul><li><strong>Pre-processing Options:</strong> These global options clean the data <em>before</em> comparison.<ul><li><code>Trim Whitespace</code>: Removes spaces from the beginning and end of each line. (Default: On)</li><li><code>Remove Empty Lines</code>: Filters out any blank lines. (Default: On)</li><li><code>Remove Duplicate Lines</code>: De-duplicates each list individually before comparison. Respects the 'Case Sensitive' setting. (Default: Off)</li></ul></li><li><strong>Per-List Find & Replace:</strong> Each list has its own Find/Replace tool. Enter text in the <strong>Find...</strong> and <strong>Replace With...</strong> fields and click the gray <strong>Apply</strong> button for that list to perform the transformation. Check <strong>Use Regex</strong> to use Regular Expressions.</li><li><strong>Global Find & Replace:</strong> In List A's options, check the <strong>Apply to All Lists</strong> box. When you click List A's <strong>Apply</strong> button, the operation will be performed on all active lists. This hides the other Find/Replace sections to show it's in global mode.</li></ul>
+                <h3>Advanced Features</h3><ul><li><strong>CSV Column Selection:</strong> If you upload a <code>.csv</code> file with multiple columns, a dropdown will appear allowing you to select which column's data to use for the comparison.</li><li><strong>Enhanced Results (for 2 Lists only):</strong> When comparing two lists, the results section provides extra detail. The statistics box shows counts for unique items, and a <strong>Venn Diagram</strong> gives a quick visual summary. A <strong>Diff View</strong> tab also appears, showing a merged list with added lines in green (+) and removed lines in red (-).</li></ul>
+                <h3>Program Limitations</h3><ul><li><strong>Text Area Size:</strong> Pasting extremely large lists (over 200 KB) into the text boxes may cause browser slowdowns. For very large datasets, using the file upload is recommended.</li><li><strong>List Limit:</strong> The tool supports a maximum of 4 lists to ensure a clean layout and stable performance.</li></ul>
+            </div>
+            <div id="about-content" class="collapsible-content">
+                <p>Created by Sinisa Bozic</p>
+                <p><a href="mailto:modblaises@proton.me">Suggestions and comments</a> are appreciated!</p>
+            </div>
+            <div class="donation-link">
+                <a href="https://buymeacoffee.com/listcompandproc" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 50px; width: 180px;"></a>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let listCount = 0;
+    const MAX_LISTS = 4;
+    const DOMElements = {
+        inputArea: document.getElementById('inputArea'), addListBtn: document.getElementById('addListBtn'),
+        globalOptionsContainer: document.getElementById('globalOptionsContainer'), compareBtn: document.getElementById('compareBtn'),
+        clearBtn: document.getElementById('clearBtn'), counts: document.getElementById('counts'),
+        primaryHeader: document.getElementById('primaryResultHeader'), primaryResultOutput: document.getElementById('primaryResultOutput'),
+        copyBtn: document.getElementById('copyBtn'), exportBtn: document.getElementById('exportBtn'),
+        resultTabs: document.getElementById('resultTabs'), diffTabButton: document.getElementById('diffTabButton'),
+        diffViewOutput: document.getElementById('diffViewOutput'), vennDiagram: document.getElementById('vennDiagram'),
+        toggleDocsBtn: document.getElementById('toggle-docs'), docsContent: document.getElementById('documentation-content'),
+        toggleAboutBtn: document.getElementById('toggle-about'), aboutContent: document.getElementById('about-content')
+    };
+
+    function createGlobalOptionsHTML() { return `<div class="option-group"><label for="comparisonMode">Comparison Mode:</label><select id="comparisonMode"></select></div><div class="checkbox-group"><label>Options:</label><div><input type="checkbox" id="caseSensitiveCheckbox"><label for="caseSensitiveCheckbox">Case Sensitive</label></div></div><div class="checkbox-group"><label>Pre-processing:</label><div><input type="checkbox" id="trimWhitespaceCheckbox" checked><label for="trimWhitespaceCheckbox">Trim Whitespace</label></div><div><input type="checkbox" id="removeEmptyLinesCheckbox" checked><label for="removeEmptyLinesCheckbox">Remove Empty Lines</label></div><div><input type="checkbox" id="removeDuplicateLinesCheckbox"><label for="removeDuplicateLinesCheckbox">Remove Duplicate Lines</label></div></div>`; }
+    function createPerListOptionsHTML(listId) {
+        let checkboxesHTML = listId === 1 ? `<div class="checkbox-group-horizontal"><div class="checkbox-item"><input type="checkbox" id="useRegexCheckbox1"><label for="useRegexCheckbox1">Use Regex</label></div><div class="checkbox-item"><input type="checkbox" id="applyAllCheckbox"><label for="applyAllCheckbox">Apply to All Lists</label></div></div>` : `<div class="checkbox-group-horizontal"><div class="checkbox-item"><input type="checkbox" id="useRegexCheckbox${listId}"><label for="useRegexCheckbox${listId}">Use Regex</label></div></div>`;
+        return `<div class="per-list-options"><div class="option-group"><input type="text" id="findChar${listId}" placeholder="Find..."> <input type="text" id="replaceChar${listId}" placeholder="Replace With..."></div>${checkboxesHTML}<button class="apply-btn" data-list-id="${listId}">Apply</button></div>`;
+    }
+    
+    function addListColumn() {
+        if (listCount >= MAX_LISTS) return;
+        listCount++;
+        const listLetter = String.fromCharCode(64 + listCount);
+        const newColumn = document.createElement('div');
+        newColumn.className = 'list-column';
+        newColumn.dataset.listId = listCount;
+        newColumn.innerHTML = `<div class="list-header"><label for="textList${listCount}">List ${listLetter}:</label>${listCount > 2 ? `<button class="remove-list-btn" data-list-id="${listCount}" title="Remove this list">&times;</button>` : ''}</div><textarea id="textList${listCount}" placeholder="Paste list or use file..."></textarea>${createPerListOptionsHTML(listCount)}<div class="csv-column-selector" id="csv-selector-container-${listCount}"></div><input type="file" id="file${listCount}" accept=".txt,.csv" style="margin-top: auto;">`;
+        DOMElements.inputArea.appendChild(newColumn);
+        attachListEventListeners(listCount);
+        updateUIState();
+    }
+
+    function removeListColumn(listIdToRemove) {
+        document.querySelector(`.list-column[data-list-id="${listIdToRemove}"]`)?.remove();
+        listCount--;
+        document.querySelectorAll('.list-column').forEach((column, index) => {
+            const newId = index + 1, newLetter = String.fromCharCode(64 + newId);
+            column.dataset.listId = newId;
+            ['textList', 'findChar', 'replaceChar', 'useRegexCheckbox', 'csv-selector-container-', 'file'].forEach(prefix => { const el = column.querySelector(`[id^="${prefix}"]`); if(el) el.id = `${prefix}${newId}`; });
+            column.querySelector('.list-header label').textContent = `List ${newLetter}:`;
+            const removeBtn = column.querySelector('.remove-list-btn'); if (removeBtn) removeBtn.dataset.listId = newId;
+            const applyBtn = column.querySelector('.apply-btn'); if (applyBtn) applyBtn.dataset.listId = newId;
+        });
+        updateUIState();
+    }
+
+    function updateUIState() {
+        DOMElements.addListBtn.disabled = listCount >= MAX_LISTS;
+        updateComparisonModes();
+    }
+
+    function updateComparisonModes() {
+        const modeSelect = document.getElementById('comparisonMode'); const currentVal = modeSelect.value;
+        modeSelect.innerHTML = '';
+        let options = (listCount === 2) ? [ { value: 'intersection', text: 'In Both (A ∩ B)' }, { value: 'union', text: 'All Distinct (A ∪ B)' }, { value: 'B-A', text: 'Only in B (B – A)' }, { value: 'A-B', text: 'Only in A (A – B)' }, { value: 'symmetric', text: 'Unique to each (A ∆ B)' } ] : [ { value: 'intersection', text: 'Intersection (In ALL lists)' }, { value: 'union', text: 'Union (All distinct items)' } ];
+        options.forEach(opt => { const el = document.createElement('option'); el.value = opt.value; el.textContent = opt.text; modeSelect.appendChild(el); });
+        if (options.some(opt => opt.value === currentVal)) modeSelect.value = currentVal;
+    }
+
+    function performMultiListComparison(lists, isCaseSensitive) {
+        const process = item => isCaseSensitive ? item : String(item).toLowerCase();
+        const originalCaseMap = new Map();
+        lists.flat().forEach(item => { const pItem = process(item); if (!originalCaseMap.has(pItem)) originalCaseMap.set(pItem, item); });
+        const sets = lists.map(list => new Set(list.map(process)));
+        const results = { intersection: [], union: [], diffA_B: [], diffB_A: [], symmetric: [] };
+        if (sets.length === 0) return results;
+        const allProcessedItems = new Set(sets.flatMap(s => Array.from(s)));
+        results.union = Array.from(allProcessedItems).map(item => originalCaseMap.get(item));
+        for (const item of allProcessedItems) { if (sets.every(set => set.has(item))) results.intersection.push(originalCaseMap.get(item)); }
+        if (lists.length === 2) {
+            results.diffA_B = lists[0].filter(item => !sets[1].has(process(item)));
+            results.diffB_A = lists[1].filter(item => !sets[0].has(process(item)));
+            results.symmetric = [...results.diffA_B, ...results.diffB_A];
+        }
+        return results;
+    }
+    
+    function readFileAsText(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("Could not read file.")); reader.readAsText(file); }); }
+    
+    function applyFindAndReplace(clickedListId) {
+        const isGlobal = (clickedListId === '1' && document.getElementById('applyAllCheckbox')?.checked);
+        const sourceId = isGlobal ? 1 : clickedListId;
+        const findText = document.getElementById(`findChar${sourceId}`).value;
+        const replaceText = document.getElementById(`replaceChar${sourceId}`).value;
+        const useRegex = document.getElementById(`useRegexCheckbox${sourceId}`).checked;
+        if (!findText) return;
+        const targetListIds = isGlobal ? Array.from({length: listCount}, (_, i) => i + 1) : [parseInt(clickedListId)];
+        targetListIds.forEach(id => {
+            const textarea = document.getElementById(`textList${id}`);
+            try {
+                if (useRegex) { textarea.value = textarea.value.replace(new RegExp(findText, 'g'), replaceText); } 
+                else { textarea.value = textarea.value.replaceAll(findText, replaceText); }
+            } catch (e) { alert(`Invalid Regular Expression for list ${String.fromCharCode(64 + parseInt(sourceId))}.`); }
+        });
+    }
+
+    async function handleCompare() {
+        const allLists = [], isCaseSensitive = document.getElementById('caseSensitiveCheckbox').checked;
+        const preprocessingOptions = { isCaseSensitive, trim: document.getElementById('trimWhitespaceCheckbox').checked, removeEmpty: document.getElementById('removeEmptyLinesCheckbox').checked, removeDuplicates: document.getElementById('removeDuplicateLinesCheckbox').checked };
+        try {
+            for (let i = 1; i <= listCount; i++) {
+                const textarea = document.getElementById(`textList${i}`), fileInput = document.getElementById(`file${i}`);
+                let rawText = textarea.value;
+                if (!rawText.trim() && fileInput.files[0]) { rawText = await readFileAsText(fileInput.files[0]); textarea.value = rawText; } 
+                else if (!rawText.trim()) { throw new Error(`Please provide input for List ${String.fromCharCode(64 + i)}.`); }
+                let listData = rawText;
+                const colSelect = document.getElementById(`csv-column-select-${i}`);
+                if (colSelect && fileInput.files[0]?.name.endsWith('.csv')) {
+                    const colIndex = parseInt(colSelect.value, 10);
+                    listData = rawText.split(/\r?\n/).map(row => (row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)[colIndex] || '').trim().replace(/^"|"$/g, '')).join('\n');
+                }
+                let list = listData.split(/\r?\n/);
+                if (preprocessingOptions.trim) list = list.map(item => item.trim());
+                if (preprocessingOptions.removeEmpty) list = list.filter(Boolean);
+                if (preprocessingOptions.removeDuplicates) {
+                    const seen = new Set(), process = item => isCaseSensitive ? item : item.toLowerCase();
+                    list = list.filter(line => { const pLine = process(line); if(seen.has(pLine)) return false; seen.add(pLine); return true; });
+                }
+                allLists.push(list);
+            }
+            const comparison = performMultiListComparison(allLists, isCaseSensitive);
+            updateResultsUI(allLists, comparison, document.getElementById('comparisonMode').value);
+        } catch (error) { alert(error.message); console.error(error); }
+    }
+
+    function updateResultsUI(lists, comparison, mode) {
+        DOMElements.counts.innerHTML = '';
+        lists.forEach((list, i) => DOMElements.counts.innerHTML += `<p>Items in List ${String.fromCharCode(65 + i)}: <span>${list.length}</span></p>`);
+        
+        DOMElements.vennDiagram.style.display = 'none';
+        DOMElements.diffTabButton.style.display = 'none';
+
+        if (listCount === 2) {
+            DOMElements.counts.innerHTML += `<p>Intersection (A & B): <span>${comparison.intersection.length}</span></p>`;
+            DOMElements.counts.innerHTML += `<p>Unique to A: <span>${comparison.diffA_B.length}</span></p>`;
+            DOMElements.counts.innerHTML += `<p>Unique to B: <span>${comparison.diffB_A.length}</span></p>`;
+            
+            DOMElements.vennDiagram.style.display = 'block';
+            document.getElementById('venn-a-only').textContent = comparison.diffA_B.length;
+            document.getElementById('venn-b-only').textContent = comparison.diffB_A.length;
+            document.getElementById('venn-intersect').textContent = comparison.intersection.length;
+            
+            DOMElements.diffTabButton.style.display = 'inline-block';
+            updateDiffView(lists[0], lists[1], comparison);
+        } else {
+             DOMElements.counts.innerHTML += `<p>Intersection (All): <span>${comparison.intersection.length}</span></p>`;
+        }
+        
+        let primaryResultList = [], headerText = '';
+        switch (mode) {
+            case 'B-A': headerText = 'Only in B (B – A)'; primaryResultList = comparison.diffB_A; break;
+            case 'A-B': headerText = 'Only in A (A – B)'; primaryResultList = comparison.diffA_B; break;
+            case 'symmetric': headerText = 'Unique to each (A ∆ B)'; primaryResultList = comparison.symmetric; break;
+            case 'intersection': headerText = listCount > 2 ? 'Intersection (In ALL lists)' : 'In Both (A ∩ B)'; primaryResultList = comparison.intersection; break;
+            case 'union': headerText = listCount > 2 ? 'Union (All distinct items)' : 'All Distinct (A ∪ B)'; primaryResultList = comparison.union; break;
+        }
+        DOMElements.primaryResultOutput.value = (primaryResultList || []).join('\n');
+        DOMElements.primaryHeader.textContent = headerText;
+    }
+
+    function updateDiffView(listA, listB, comparison) {
+        const process = item => document.getElementById('caseSensitiveCheckbox').checked ? item : item.toLowerCase();
+        const setA_B = new Set(comparison.diffA_B.map(process)), setB_A = new Set(comparison.diffB_A.map(process));
+        const combined = [...new Set([...listA, ...listB])];
+        let diffHTML = '';
+        combined.forEach(item => { const pItem = process(item); if (setA_B.has(pItem)) diffHTML += `<span class="removed">- ${item}</span>`; else if (setB_A.has(pItem)) diffHTML += `<span class="added">+ ${item}</span>`; else diffHTML += `<span>  ${item}</span>`; });
+        DOMElements.diffViewOutput.innerHTML = diffHTML;
+    }
+    
+    async function handleFileUpload(e) { const file = e.target.files[0], listId = e.target.closest('.list-column').dataset.listId; const selectorContainer = document.getElementById(`csv-selector-container-${listId}`); selectorContainer.innerHTML = ''; if (file && file.name.endsWith('.csv')) { try { const text = await readFileAsText(file); const headers = text.split(/\r?\n/)[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); if (headers.length > 1) { const select = document.createElement('select'); select.id = `csv-column-select-${listId}`; headers.forEach((h, i) => { const opt = document.createElement('option'); opt.value = i; opt.textContent = `Use Col ${i + 1}: ${h.trim().replace(/^"|"$/g, '')}`; select.appendChild(opt); }); selectorContainer.appendChild(select); } } catch (error) { alert("Error reading CSV file."); console.error(error); } } }
+    function toggleGlobalFindReplaceUI(isChecked) { for(let i = 2; i <= listCount; i++) { const column = document.querySelector(`.list-column[data-list-id="${i}"]`); if (column) { const optionsEl = column.querySelector('.per-list-options'); if (optionsEl) optionsEl.style.display = isChecked ? 'none' : 'flex'; } } }
+    function attachListEventListeners(listId) { document.getElementById(`file${listId}`).addEventListener('change', handleFileUpload); if (listId === 1) document.getElementById('applyAllCheckbox')?.addEventListener('change', (e) => toggleGlobalFindReplaceUI(e.target.checked)); }
+    function clearAll(confirmReset) { if(confirmReset && !confirm('This will clear all inputs and results. Are you sure?')) return; DOMElements.inputArea.innerHTML = ''; listCount = 0; addListColumn(); addListColumn(); document.querySelectorAll('textarea, input[type="text"], input[type="file"]').forEach(el => el.value = ''); document.querySelectorAll('.warning-message, .csv-column-selector, #counts').forEach(el => el.innerHTML = ''); document.querySelectorAll('textarea.error').forEach(el => el.classList.remove('error')); DOMElements.primaryResultOutput.value = ''; DOMElements.diffViewOutput.innerHTML = ''; DOMElements.primaryHeader.textContent = 'Primary Result'; DOMElements.vennDiagram.style.display = 'none'; DOMElements.diffTabButton.style.display = 'none'; updateUIState(); }
+    function copyToClipboard() { navigator.clipboard.writeText(DOMElements.primaryResultOutput.value).then(() => { const originalText = DOMElements.copyBtn.textContent; DOMElements.copyBtn.textContent = 'Copied!'; setTimeout(() => DOMElements.copyBtn.textContent = originalText, 2000); }).catch(err => alert('Failed to copy text.')); }
+    function downloadFile() { const content = DOMElements.primaryResultOutput.value; const blob = new Blob([content], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'PrimaryResult.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+    
+    DOMElements.globalOptionsContainer.innerHTML = createGlobalOptionsHTML();
+    addListColumn(); addListColumn();
+    DOMElements.addListBtn.addEventListener('click', addListColumn);
+    DOMElements.compareBtn.addEventListener('click', handleCompare);
+    DOMElements.clearBtn.addEventListener('click', () => clearAll(true));
+    DOMElements.copyBtn.addEventListener('click', copyToClipboard);
+    DOMElements.exportBtn.addEventListener('click', downloadFile);
+    DOMElements.inputArea.addEventListener('click', (e) => {
+        if (e.target.matches('.remove-list-btn')) removeListColumn(e.target.dataset.listId);
+        if (e.target.matches('.apply-btn')) applyFindAndReplace(e.target.dataset.listId);
+    });
+    DOMElements.resultTabs.addEventListener('click', (e) => {
+        if (e.target.matches('.tab-button')) {
+            document.querySelectorAll('.tab-button, .tab-content').forEach(el => el.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById(e.target.dataset.tab).classList.add('active');
+        }
+    });
+    DOMElements.toggleDocsBtn.addEventListener('click', () => {
+        const isHidden = DOMElements.docsContent.style.display === 'none' || DOMElements.docsContent.style.display === '';
+        DOMElements.docsContent.style.display = isHidden ? 'block' : 'none';
+        DOMElements.toggleDocsBtn.textContent = isHidden ? 'Hide Documentation' : 'Show Documentation';
+    });
+    DOMElements.toggleAboutBtn.addEventListener('click', () => {
+        const isHidden = DOMElements.aboutContent.style.display === 'none' || DOMElements.aboutContent.style.display === '';
+        DOMElements.aboutContent.style.display = isHidden ? 'block' : 'none';
+        DOMElements.toggleAboutBtn.textContent = isHidden ? 'Hide About' : 'About';
+    });
+});
+</script>
+</body>
+</html>
